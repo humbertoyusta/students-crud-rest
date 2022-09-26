@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Request;
 use App\Models\Student;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class StudentsService
@@ -40,19 +41,26 @@ class StudentsService
      * @param $isImageRequired -- a bool set to true if image is required
      * @throws a validation errror if validation fails
      */
-    private function validate($studentDto, $isImageRequired)
+    private function validateRequired(Request $studentRequest)
     {
-        $studentDto->validate([
+        return $studentRequest->validate([
             'firstname' => 'required|max:120',
             'lastname' => 'required|max:120',
             'email' => 'required|max:255',
             'address' => 'required',
-            'score' => 'required|min:0',
-            'image' => 'image|mimes:png,jpg,jpeg|max:2048'
+            'score' => 'required|min:0|numeric',
         ]);
+    }
 
-        if ($isImageRequired)
-            $studentDto->validate(['image' => 'required']);
+    private function validateOptional(Request $studentRequest)
+    {
+        return $studentRequest->validate([
+            'firstname' => 'nullable|max:120',
+            'lastname' => 'nullable|max:120',
+            'email' => 'nullable|max:255',
+            'address' => 'nullable',
+            'score' => 'nullable|min:0|numeric',
+        ]);
     }
 
     /**
@@ -60,9 +68,9 @@ class StudentsService
      * @param studentDto -- with all the data of the student
      * @return the filenime after app/public/images
      */
-    private function storeImage($studentDto)
+    private function storeImage($file)
     {
-        $file= $studentDto->file('image');
+        //$file= $studentCollection->file('image');
         $filename= date('YmdHi').$file->getClientOriginalName();
         $file-> move(public_path('images'), $filename);
         return $filename;
@@ -74,25 +82,22 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function add($studentDto)
+    public function add(Request $studentRequest)
     {
-        $this->validate($studentDto, ($studentDto->image != null));
+        $validatedRequest = $this -> validateRequired($studentRequest);
 
-        if ($this->findOneByEmail($studentDto->email))
+        if ($this->findOneByEmail($studentRequest->input('email')))
         {
-            throw new ConflictHttpException();
+            throw new ConflictHttpException('There is another user with the same email');
         }
 
-        $student = new Student([
-            'firstname' => $studentDto->firstname,
-            'lastname' => $studentDto->lastname,
-            'email' => $studentDto->email,
-            'address' => $studentDto->address,
-            'score' => $studentDto->score,
-        ]);
+        $student = new Student($validatedRequest);
 
-        if ($studentDto->image != null)
-            $student -> image = $this->storeImage($studentDto);
+        if ($studentRequest -> input('image') != null)
+        {
+            $studentRequest -> validate(['image' => 'image|size:2048|mimes:jpeg,png,jpg,gif']);
+            $student -> image = $this->storeImage($studentRequest->file('image'));
+        }
 
         $student -> save();
         return $student;
@@ -105,42 +110,38 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function edit($id, Request $studentDto)
+    public function edit($id, Request $studentRequest)
     {
-        assert($id === $studentDto->id);
+        $validatedRequest = $this -> validateOptional($studentRequest);
 
-        $this->validate($studentDto, 0);
+        if($studentRequest->input('id') != null && $id != $studentRequest->input('id'))
+            throw new BadRequestHttpException('id of the element in route does not match request body id');
 
-        $studentWithSameEmail = $this->findOneByEmail($studentDto->email);
+        $studentWithSameEmail = $this->findOneByEmail($studentRequest->input('email'));
         if ($studentWithSameEmail && $studentWithSameEmail->id != $id)
         {
-            throw new ConflictHttpException();
+            throw new ConflictHttpException('There is another user with the same new email');
         }
 
         $student = $this->findOne($id);
 
-        if ($studentDto->image)
+        /*$student->update([
+            'firstname' => $studentRequest->input('firstname'),
+            'lastname' => $studentRequest->input('lastname'),
+            'email' => $studentRequest->input('email'),
+            'address' => $studentRequest->input('address'),
+            'score' => $studentRequest->input('score'),
+        ]);*/
+        $student->update($validatedRequest);
+
+        if ($studentRequest->input('image') != null)
         {
             if ($student->image != null)
                 unlink(public_path().'/images/'.$student->image);
 
+            $studentRequest -> validate(['image' => 'image|size:2048|mimes:jpeg,png,jpg,gif']);
             $student->update([
-                'firstname' => $studentDto->firstname,
-                'lastname' => $studentDto->lastname,
-                'email' => $studentDto->email,
-                'address' => $studentDto->address,
-                'score' => $studentDto->score,
-                'image' => $this->storeImage($studentDto)
-            ]);
-        }
-        else
-        {
-            $student->update([
-                'firstname' => $studentDto->firstname,
-                'lastname' => $studentDto->lastname,
-                'email' => $studentDto->email,
-                'address' => $studentDto->address,
-                'score' => $studentDto->score
+                'image' => $this->storeImage($studentRequest->file('image')),
             ]);
         }
 
@@ -155,7 +156,8 @@ class StudentsService
     {
         $student = Student::find($id);
 
-        unlink(public_path().'/images/'.$student->image);
+        if ($student -> image != null)
+            unlink(public_path().'/images/'.$student->image);
 
         return $student->delete();
     }
