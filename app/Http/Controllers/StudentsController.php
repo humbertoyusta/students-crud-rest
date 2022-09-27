@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Student;
 use App\Services\StudentsService;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Http\Requests\StoreStudentRequest;
+use App\Http\Requests\UpdateStudentRequest;
 
 class StudentsController extends Controller
 {
@@ -36,18 +35,14 @@ class StudentsController extends Controller
      */
     public function findOne($id)
     {
-        $student = $this->studentsService->findOne($id);
-        if ($student)
-            return response()->json($student, Response::HTTP_OK);
-        else
-            return response()->json(['message' => 'No student with id '.$id.' found'], Response::HTTP_NOT_FOUND);
+        return response()->json($this->studentsService->findOne($id), Response::HTTP_OK);
     }
 
     /**
      * Adds a new student
      * @param $request - a request containing all data of a student
      */
-    public function create(Request $request) 
+    public function create(StoreStudentRequest $request) 
     {
         return response()->json($this->studentsService->add($request), Response::HTTP_CREATED);
     }
@@ -57,7 +52,7 @@ class StudentsController extends Controller
      * @redirects to the same edit view with a success message or an error
      * @param $request - a request containing the new data of the student
      */
-    public function update(Request $request, $id)
+    public function update(UpdateStudentRequest $request, $id)
     {
         return response()->json($this->studentsService->edit($id, $request), Response::HTTP_OK);
     }
