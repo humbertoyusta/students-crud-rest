@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Http\Requests\StoreStudentRequest;
+use App\Http\Requests\UpdateStudentRequest;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -15,7 +17,7 @@ class StudentsService
      */
     public function findOne($id)
     {
-        return Student::find($id);
+        return Student::findOrFail($id);
     }
 
     /**
@@ -36,62 +38,19 @@ class StudentsService
     }
 
     /**
-     * internal private function to validate a student before adding to the database
-     * @param $studentDto -- with all the data of the student
-     * @param $isImageRequired -- a bool set to true if image is required
-     * @throws a validation errror if validation fails
-     */
-    private function validateRequired(Request $studentRequest)
-    {
-        return $studentRequest->validate([
-            'firstname' => 'required|max:120',
-            'lastname' => 'required|max:120',
-            'email' => 'required|max:255',
-            'address' => 'required',
-            'score' => 'required|min:0|numeric',
-        ]);
-    }
-
-    private function validateOptional(Request $studentRequest)
-    {
-        return $studentRequest->validate([
-            'firstname' => 'nullable|max:120',
-            'lastname' => 'nullable|max:120',
-            'email' => 'nullable|max:255',
-            'address' => 'nullable',
-            'score' => 'nullable|min:0|numeric',
-        ]);
-    }
-
-    /**
-     * internal private function to store an image
-     * @param studentDto -- with all the data of the student
-     * @return the filenime after app/public/images
-     */
-    private function storeImage($file)
-    {
-        //$file= $studentCollection->file('image');
-        $filename= date('YmdHi').$file->getClientOriginalName();
-        $file-> move(public_path('images'), $filename);
-        return $filename;
-    }
-
-    /**
      * @param $studentDto -- with all the data of the student
      * @return $student -- the student added to the database
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function add(Request $studentRequest)
+    public function add(StoreStudentRequest $studentRequest)
     {
-        $validatedRequest = $this -> validateRequired($studentRequest);
-
         if ($this->findOneByEmail($studentRequest->input('email')))
         {
             throw new ConflictHttpException('There is another user with the same email');
         }
 
-        $student = new Student($validatedRequest);
+        $student = new Student($studentRequest->except('image'));
 
         if ($studentRequest -> input('image') != null)
         {
@@ -110,10 +69,8 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function edit($id, Request $studentRequest)
+    public function edit($id, UpdateStudentRequest $studentRequest)
     {
-        $validatedRequest = $this -> validateOptional($studentRequest);
-
         if($studentRequest->input('id') != null && $id != $studentRequest->input('id'))
             throw new BadRequestHttpException('id of the element in route does not match request body id');
 
@@ -125,14 +82,7 @@ class StudentsService
 
         $student = $this->findOne($id);
 
-        /*$student->update([
-            'firstname' => $studentRequest->input('firstname'),
-            'lastname' => $studentRequest->input('lastname'),
-            'email' => $studentRequest->input('email'),
-            'address' => $studentRequest->input('address'),
-            'score' => $studentRequest->input('score'),
-        ]);*/
-        $student->update($validatedRequest);
+        $student->update($studentRequest->except('image'));
 
         if ($studentRequest->input('image') != null)
         {
