@@ -31,7 +31,9 @@ class StudentsService
 
     public function showImage($id)
     {
-        return Storage::get($this->findOne($id)->image);
+        $image = Storage::get('public/'.$this->findOne($id)->image);
+        $mime = Storage::mimeType('public/'.$this->findOne($id)->image);
+        return [$image, $mime];
     }
 
     /**

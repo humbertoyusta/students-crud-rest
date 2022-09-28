@@ -40,7 +40,9 @@ class StudentsController extends Controller
 
     public function showImage($id)
     {
-        return response($this->studentsService->showImage($id), Response::HTTP_OK);
+        $image = $this->studentsService->showImage($id);
+        return response($image[0], Response::HTTP_OK)
+            ->header('Content-Type', $image[1]);
     }
 
     /**
