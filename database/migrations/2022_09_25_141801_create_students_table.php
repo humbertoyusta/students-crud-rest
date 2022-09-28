@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use Illuminate\Support\Facades\Storage;
 return new class extends Migration
 {
     /**
@@ -32,12 +32,7 @@ return new class extends Migration
      */
     public function down()
     {
-        $files = glob(public_path().'/images/*'); // get all file names
-        foreach($files as $file){ // iterate files
-            if(is_file($file)) {
-                unlink($file); // delete file
-            }
-        }
+        Storage::delete(Storage::files('public/images'));
         Schema::dropIfExists('students');
     }
 };
