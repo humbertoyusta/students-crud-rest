@@ -8,12 +8,14 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Student;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class StudentsService
 {
     /**
      * @param $id
-     * @return the student with given $id or null if it doesn't exists
+     * @return the student with given $id
+     * @throws HttpNotFoundxception when user is not found
      */
     public function findOne($id)
     {
@@ -29,15 +31,24 @@ class StudentsService
         return Student::where('email', $email)->first();
     }
 
+    /**
+     * @param $id
+     * @return [$image, $mime] -- an array containing the image of the student and its mime type
+     * @throws HttpNotFoundxception when user is not found or does not have image
+     */
     public function showImage($id)
     {
-        $image = Storage::get('public/'.$this->findOne($id)->image);
-        $mime = Storage::mimeType('public/'.$this->findOne($id)->image);
+        $student = $this->findOne($id);
+        if (!$student->image)
+            throw new NotFoundHttpException('User with id '.$id.' does not have any image');
+
+        $image = Storage::get('public/'.$student->image);
+        $mime = Storage::mimeType('public/'.$student->image);
         return [$image, $mime];
     }
 
     /**
-     * @return a list of all students
+     * @return a list of all students (without images)
      */
     public function findAll()
     {
@@ -45,10 +56,11 @@ class StudentsService
     }
 
     /**
-     * @param $studentDto -- with all the data of the student
+     * @param $studentRequest -- a StoreStudentRequest with all the data of the student
      * @return $student -- the student added to the database
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
+     * Stores the image (if there is) in public storage folder
      */
     public function create(StoreStudentRequest $studentRequest)
     {
@@ -71,10 +83,10 @@ class StudentsService
 
     /**
      * @param $id -- id of the student to edit
-     * @param $studentDto -- with all the data of the student
+     * @param $studentRequest -- a UpdateStudentRequest with all the data of the student
      * @return $student -- the student added to the database
      * @throws a validation errror if validation fails
-     * @throws ConflictHttpException -- if there is another user with the same email
+     * @throws ConflictHttpException -- if there is another user with the same new email
      */
     public function update($id, UpdateStudentRequest $studentRequest)
     {
@@ -101,7 +113,7 @@ class StudentsService
     }
 
     /**
-     * deletes a student
+     * deletes a student (also deletes his/her image)
      * @param $id
      */
     public function delete($id)

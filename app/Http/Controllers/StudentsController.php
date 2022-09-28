@@ -23,6 +23,7 @@ class StudentsController extends Controller
 
     /**
      * @return a list of students
+     * @status HTTP_OK
      */
     public function index() 
     {
@@ -30,14 +31,22 @@ class StudentsController extends Controller
     }
 
     /**
-     * @return a view with student's data
      * @param id
+     * @return student with that id
+     * @throws Not Found 404 if user does not exist
+     * @status HTTP_OK
      */
     public function show($id)
     {
         return response()->json(new StudentResource($this->studentsService->findOne($id)), Response::HTTP_OK);
     }
 
+    /**
+     * @param id
+     * @return image of the student with that id
+     * @throws Not Found 404 if user does not exist or does not have image
+     * @status HTTP_OK
+     */
     public function showImage($id)
     {
         $image = $this->studentsService->showImage($id);
@@ -46,18 +55,23 @@ class StudentsController extends Controller
     }
 
     /**
-     * Adds a new student
-     * @param $request - a request containing all data of a student
+     * @param $studentRequest - a StoreStudentRequest containing all data of a student
+     * @return student created
+     * @status HTTP_CREATED
+     * @throws HTTP_CONFLICT if there is another user with the same email
+     * @throws validation errors 422, if validation fails
      */
-    public function create(StoreStudentRequest $request) 
+    public function create(StoreStudentRequest $studentRequest) 
     {
-        return response()->json($this->studentsService->create($request), Response::HTTP_CREATED);
+        return response()->json($this->studentsService->create($studentRequest), Response::HTTP_CREATED);
     }
 
     /**
-     * Edits a student
-     * @redirects to the same edit view with a success message or an error
-     * @param $request - a request containing the new data of the student
+     * @param $studentRequest - a UpdateStudentRequest containing all data of a student
+     * @return student updated
+     * @status HTTP_OK
+     * @throws HTTP_CONFLICT if there is another user with the same email
+     * @throws validation errors 422, if validation fails
      */
     public function update(UpdateStudentRequest $request, $id)
     {
@@ -67,7 +81,9 @@ class StudentsController extends Controller
     /**
      * deletes a studeing given $id
      * @param id
-     * @return a view of the list of students and a success message or error
+     * @return nothing
+     * @status HTTP_NO_CONTENT
+     * @throws HTTP_NOT_FOUND if user does not exist
      */
     public function delete($id)
     {
