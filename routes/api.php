@@ -19,9 +19,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/students', [StudentsController::class, 'findAll']) -> name('students-find-all');
+Route::get('/students', [StudentsController::class, 'findAll']) -> name('students-index');
 
-Route::get('/student/{id}', [StudentsController::class, 'findOne']) -> name('student-find-one');
+Route::get('/student/{id}', [StudentsController::class, 'findOne']) -> name('student-show');
+
+Route::get('/student/{id}', [StudentsController::class, 'findOne']) -> name('student-show-image');
 
 Route::post('/student', [StudentsController::class, 'create']) -> name('student-create');
 
