@@ -27,7 +27,7 @@ class UpdateStudentRequest extends FormRequest
             'firstname' => ['nullable', 'max:120'],
             'lastname' => ['nullable', 'max:120'],
             'email' => ['nullable', 'max:255', 'email'],
-            'address' => ['nullable'],
+            'address' => ['nullable', 'max:255'],
             'score' => ['nullable', 'min:0', 'numeric'],
             'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
         ];

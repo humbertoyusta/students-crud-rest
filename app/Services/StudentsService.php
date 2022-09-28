@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Student;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -29,6 +29,11 @@ class StudentsService
         return Student::where('email', $email)->first();
     }
 
+    public function showImage($id)
+    {
+        return Storage::get($this->findOne($id)->image);
+    }
+
     /**
      * @return a list of all students
      */
@@ -43,7 +48,7 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function add(StoreStudentRequest $studentRequest)
+    public function create(StoreStudentRequest $studentRequest)
     {
         if ($this->findOneByEmail($studentRequest->input('email')))
         {
@@ -52,10 +57,10 @@ class StudentsService
 
         $student = new Student($studentRequest->except('image'));
 
-        if ($studentRequest -> input('image') != null)
+        $file = $studentRequest -> file('image');
+        if ($file)
         {
-            $studentRequest -> validate(['image' => 'image|size:2048|mimes:jpeg,png,jpg,gif']);
-            $student -> image = $this->storeImage($studentRequest->file('image'));
+            $student -> image = $file -> store('images', 'public');
         }
 
         $student -> save();
@@ -69,33 +74,28 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same email
      */
-    public function edit($id, UpdateStudentRequest $studentRequest)
+    public function update($id, UpdateStudentRequest $studentRequest)
     {
-        if($studentRequest->input('id') != null && $id != $studentRequest->input('id'))
-            throw new BadRequestHttpException('id of the element in route does not match request body id');
-
-        $studentWithSameEmail = $this->findOneByEmail($studentRequest->input('email'));
+        $studentWithSameEmail = $this -> findOneByEmail($studentRequest->input('email'));
         if ($studentWithSameEmail && $studentWithSameEmail->id != $id)
         {
             throw new ConflictHttpException('There is another user with the same new email');
         }
 
-        $student = $this->findOne($id);
+        $student = $this -> findOne($id);
 
-        $student->update($studentRequest->except('image'));
+        $student -> update($studentRequest->except('image'));
 
-        if ($studentRequest->input('image') != null)
+        $file = $studentRequest -> file('image');
+        if ($file)
         {
             if ($student->image != null)
-                unlink(public_path().'/images/'.$student->image);
+                Storage::delete('public/'.$student->image);
 
-            $studentRequest -> validate(['image' => 'image|size:2048|mimes:jpeg,png,jpg,gif']);
-            $student->update([
-                'image' => $this->storeImage($studentRequest->file('image')),
-            ]);
+            $student -> update(['image' => $file -> store('images', 'public')]);
         }
 
-        return $this->findOne($id);
+        return $this -> findOne($id);
     }
 
     /**
@@ -104,10 +104,10 @@ class StudentsService
      */
     public function delete($id)
     {
-        $student = Student::find($id);
+        $student = $this -> findOne($id);
 
         if ($student -> image != null)
-            unlink(public_path().'/images/'.$student->image);
+            Storage::delete('public/'.$student->image);
 
         return $student->delete();
     }

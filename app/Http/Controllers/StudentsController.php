@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Resources\StudentResource;
 use App\Services\StudentsService;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Requests\StoreStudentRequest;
@@ -24,7 +24,7 @@ class StudentsController extends Controller
     /**
      * @return a list of students
      */
-    public function findAll() 
+    public function index() 
     {
         return response()->json($this->studentsService->findAll(), Response::HTTP_OK);
     }
@@ -33,9 +33,14 @@ class StudentsController extends Controller
      * @return a view with student's data
      * @param id
      */
-    public function findOne($id)
+    public function show($id)
     {
-        return response()->json($this->studentsService->findOne($id), Response::HTTP_OK);
+        return response()->json(new StudentResource($this->studentsService->findOne($id)), Response::HTTP_OK);
+    }
+
+    public function showImage($id)
+    {
+        return response($this->studentsService->showImage($id), Response::HTTP_OK);
     }
 
     /**
@@ -44,7 +49,7 @@ class StudentsController extends Controller
      */
     public function create(StoreStudentRequest $request) 
     {
-        return response()->json($this->studentsService->add($request), Response::HTTP_CREATED);
+        return response()->json($this->studentsService->create($request), Response::HTTP_CREATED);
     }
 
     /**
@@ -54,7 +59,7 @@ class StudentsController extends Controller
      */
     public function update(UpdateStudentRequest $request, $id)
     {
-        return response()->json($this->studentsService->edit($id, $request), Response::HTTP_OK);
+        return response()->json($this->studentsService->update($request, $id), Response::HTTP_OK);
     }
 
     /**
