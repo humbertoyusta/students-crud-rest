@@ -88,7 +88,7 @@ class StudentsService
      * @throws a validation errror if validation fails
      * @throws ConflictHttpException -- if there is another user with the same new email
      */
-    public function update($id, UpdateStudentRequest $studentRequest)
+    public function update(UpdateStudentRequest $studentRequest, $id)
     {
         $studentWithSameEmail = $this -> findOneByEmail($studentRequest->input('email'));
         if ($studentWithSameEmail && $studentWithSameEmail->id != $id)

@@ -21,12 +21,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/students', [StudentsController::class, 'index']) -> name('students-index');
 
-Route::get('/student/{id}', [StudentsController::class, 'show']) -> name('student-show');
+Route::get('/students/{id}', [StudentsController::class, 'show']) -> name('student-show');
 
-Route::get('/student/{id}/image', [StudentsController::class, 'showImage']) -> name('student-show-image');
+Route::get('/students/{id}/image', [StudentsController::class, 'showImage']) -> name('student-show-image');
 
-Route::post('/student', [StudentsController::class, 'create']) -> name('student-create');
+Route::post('/students', [StudentsController::class, 'create']) -> name('student-create');
 
-Route::patch('/student/{id}', [StudentsController::class, 'update']) -> name('student-update');
+Route::put('/students/{id}', [StudentsController::class, 'update']) -> name('student-update');
 
-Route::delete('/student/{id}', [StudentsController::class, 'delete']) -> name('student-delete');
+Route::delete('/students/{id}', [StudentsController::class, 'delete']) -> name('student-delete');
